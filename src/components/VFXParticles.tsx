@@ -1,3 +1,5 @@
+import { shaderMaterial } from "@react-three/drei";
+import { extend } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending,
@@ -31,20 +33,22 @@ export const VFXParticles = ({ settings }: VFXParticlesProps) => {
   const defaultGeometry = useMemo(() => new PlaneGeometry(0.5, 0.5), []);
 
   const emit = (count: number) => {
+    if (!mesh.current) return;
+
     for (let i = 0; i < count; i++) {
-      const position = [
+      const position: [number, number, number] = [
         MathUtils.randFloatSpread(5),
         MathUtils.randFloatSpread(5),
         MathUtils.randFloatSpread(5),
       ];
 
-      const scale = [
+      const scale: [number, number, number] = [
         MathUtils.randFloatSpread(1),
         MathUtils.randFloatSpread(1),
         MathUtils.randFloatSpread(1),
       ];
 
-      const rotation: Vector3 = [
+      const rotation: [number, number, number] = [
         MathUtils.randFloatSpread(Math.PI),
         MathUtils.randFloatSpread(Math.PI),
         MathUtils.randFloatSpread(Math.PI),
@@ -74,3 +78,30 @@ export const VFXParticles = ({ settings }: VFXParticlesProps) => {
     </>
   );
 };
+
+const ParticlesMaterial = shaderMaterial(
+  {
+    color: new Color("white"),
+  },
+  // glsl
+  `
+    varying vec2 vUv;
+
+    void main() {
+    gl_position = projectionMatrix * modelViewMatrix * vec4(instanceMatrix * vec4(position, 1.0));
+    vUv = uv;
+    }
+    `,
+
+  // glsl
+  `
+    uniform vec3 color;
+    varying vec2 vUv;
+
+    void main() {
+    gl_FragColor = vec4(color, 1.0);
+    vUv = uv;
+    }`,
+);
+
+extend({ ParticlesMaterial });
